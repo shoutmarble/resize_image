@@ -133,8 +133,9 @@ Single window, Elm-style `Model/Msg/update/view`:
   (image formats for images, video formats for videos); a global default plus
   per-row override. Global resize preset `pick_list`: 1920×1080 (default),
   1280×720, 3840×2160; "Allow upscale" checkbox (default off).
-- **Output**: output folder picker (default: `<first input's dir>/converted/`,
-  created if missing); auto-rename on collision, never overwrite.
+- **Output**: output folder picker; when none is chosen, each file converts
+  into **its own folder** (see Amendments). A chosen folder persists between
+  restarts. Auto-rename on collision, never overwrite.
 - **Queue**: rows with file name, detected kind, target format, a progress
   bar, and status: Pending / Running (%) / Done / Failed (error tooltip or
   expandable stderr tail). Cancel button per running row and a global stop.
@@ -234,3 +235,25 @@ for classification):
 3. iced GUI wired to backend; manual end-to-end run of a mixed batch.
 4. `cargo clippy` clean; wasm32 check of `core` green.
 5. (Phase 2, separate spec) web harness + ffmpeg.wasm backend.
+
+## Amendments
+
+### 2026-09-28 — behavior changes requested after v1
+
+- Default output location is now the **input file's own directory** (per
+  file, since a batch can span directories) when the user has not chosen an
+  output folder; the `<input_dir>/converted/` default was removed.
+  Never-overwrite naming still protects source files.
+- A user-chosen output folder **persists between restarts**.
+- Conversion **starts automatically** as soon as files are added —
+  drag-and-drop (single or multiple) or file dialog — using the current
+  default settings. The Convert button remains as a manual fallback, and
+  dropped files simply queue behind a running job.
+- New global **default image format** and **default video format** pickers,
+  applied to newly added files (per-row override still available).
+- Persisted between restarts (JSON at
+  `$XDG_CONFIG_HOME/wasmffmpeg/settings.json`, `~/.config/...` fallback,
+  `%APPDATA%` on Windows): output folder, default image format, default
+  video format, size preset, allow-upscale flag. Unknown or corrupt
+  settings files fall back to defaults; save failures never interrupt a
+  session.

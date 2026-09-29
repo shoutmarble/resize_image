@@ -1,6 +1,7 @@
 //! The iced application: state, messages, update, view, subscription.
 
 use crate::backend::{self, ProbeInfo};
+use crate::settings::{self, Preset, Settings};
 use iced::widget::{
     Column, button, checkbox, column, container, pick_list, progress_bar, row, scrollable, space,
     text, tooltip,
@@ -10,7 +11,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use wasmffmpeg_core::{MediaKind, OutputFormat, ResizeSpec};
+use wasmffmpeg_core::{ImageFormat, MediaKind, OutputFormat, VideoFormat};
 
 pub type JobId = u64;
 
@@ -36,40 +37,12 @@ pub struct Row {
     pub error: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Preset {
-    Fhd,
-    Hd,
-    Uhd,
-}
-
-impl Preset {
-    pub const ALL: &[Preset] = &[Preset::Fhd, Preset::Hd, Preset::Uhd];
-
-    pub fn spec(self, allow_upscale: bool) -> ResizeSpec {
-        let (width, height) = match self {
-            Preset::Fhd => (1920, 1080),
-            Preset::Hd => (1280, 720),
-            Preset::Uhd => (3840, 2160),
-        };
-        ResizeSpec::new(width, height, allow_upscale)
-    }
-}
-
-impl std::fmt::Display for Preset {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match self {
-            Preset::Fhd => "1920×1080 (Full HD)",
-            Preset::Hd => "1280×720 (HD)",
-            Preset::Uhd => "3840×2160 (4K UHD)",
-        })
-    }
-}
-
 pub struct App {
     rows: Vec<Row>,
     next_id: JobId,
     out_dir: Option<PathBuf>,
+    image_format: ImageFormat,
+    video_format: VideoFormat,
     preset: Preset,
     allow_upscale: bool,
     ffmpeg_error: Option<String>,
@@ -86,6 +59,8 @@ pub enum Msg {
     FileDropped(PathBuf),
     Probed(JobId, Result<ProbeInfo, String>),
     SetRowFormat(JobId, OutputFormat),
+    SetDefaultImageFormat(ImageFormat),
+    SetDefaultVideoFormat(VideoFormat),
     SetPreset(Preset),
     ToggleUpscale(bool),
     RemoveRow(JobId),
@@ -110,13 +85,16 @@ pub fn run() -> iced::Result {
 
 pub fn boot() -> (App, Task<Msg>) {
     let ffmpeg_error = backend::check_ffmpeg_available().err();
+    let settings = settings::load();
     (
         App {
             rows: Vec::new(),
             next_id: 0,
-            out_dir: None,
-            preset: Preset::Fhd,
-            allow_upscale: false,
+            out_dir: settings.out_dir,
+            image_format: settings.image_format,
+            video_format: settings.video_format,
+            preset: settings.preset,
+            allow_upscale: settings.allow_upscale,
             ffmpeg_error,
             cancel_flags: HashMap::new(),
             running: None,
@@ -161,7 +139,10 @@ fn update(app: &mut App, msg: Msg) -> Task<Msg> {
                     id,
                     input: path.clone(),
                     kind,
-                    format: kind.map(OutputFormat::default_for),
+                    format: kind.map(|k| match k {
+                        MediaKind::Image => OutputFormat::Image(app.image_format),
+                        MediaKind::Video => OutputFormat::Video(app.video_format),
+                    }),
                     status: if kind.is_some() {
                         Status::Probing
                     } else {
@@ -185,11 +166,13 @@ fn update(app: &mut App, msg: Msg) -> Task<Msg> {
             Task::batch(tasks)
         }
         Msg::Probed(id, result) => {
+            let mut became_pending = false;
             if let Some(row) = app.rows.iter_mut().find(|r| r.id == id) {
                 match result {
                     Ok(info) => {
                         row.probe = Some(info);
                         row.status = Status::Pending;
+                        became_pending = true;
                     }
                     Err(e) => {
                         row.error = Some(e);
@@ -197,7 +180,13 @@ fn update(app: &mut App, msg: Msg) -> Task<Msg> {
                     }
                 }
             }
-            Task::none()
+            // Files start converting as soon as they are ready; if the queue
+            // is already busy they simply wait their turn.
+            if became_pending {
+                start_next(app)
+            } else {
+                Task::none()
+            }
         }
         Msg::PickOutputDir => Task::perform(
             async {
@@ -211,6 +200,7 @@ fn update(app: &mut App, msg: Msg) -> Task<Msg> {
         ),
         Msg::OutputDirPicked(dir) => {
             app.out_dir = dir;
+            app.persist();
             Task::none()
         }
         Msg::SetRowFormat(id, format) => {
@@ -219,12 +209,24 @@ fn update(app: &mut App, msg: Msg) -> Task<Msg> {
             }
             Task::none()
         }
+        Msg::SetDefaultImageFormat(format) => {
+            app.image_format = format;
+            app.persist();
+            Task::none()
+        }
+        Msg::SetDefaultVideoFormat(format) => {
+            app.video_format = format;
+            app.persist();
+            Task::none()
+        }
         Msg::SetPreset(preset) => {
             app.preset = preset;
+            app.persist();
             Task::none()
         }
         Msg::ToggleUpscale(allow) => {
             app.allow_upscale = allow;
+            app.persist();
             Task::none()
         }
         Msg::RemoveRow(id) => {
@@ -238,12 +240,7 @@ fn update(app: &mut App, msg: Msg) -> Task<Msg> {
                 .retain(|r| !matches!(r.status, Status::Done | Status::Cancelled));
             Task::none()
         }
-        Msg::Start => {
-            if app.running.is_some() {
-                return Task::none();
-            }
-            start_next(app)
-        }
+        Msg::Start => start_next(app),
         Msg::JobProgress(id, progress) => {
             if let Some(row) = app.rows.iter_mut().find(|r| r.id == id) {
                 row.progress = progress;
@@ -293,22 +290,40 @@ fn update(app: &mut App, msg: Msg) -> Task<Msg> {
 }
 
 impl App {
-    fn effective_out_dir(&self) -> Option<PathBuf> {
+    /// Where this row's output lands: the user-chosen folder when set,
+    /// otherwise the input file's own folder.
+    fn out_dir_for(&self, row: &Row) -> Option<PathBuf> {
         self.out_dir.clone().or_else(|| {
-            self.rows
-                .iter()
-                .find_map(|r| r.input.parent().map(|p| p.join("converted")))
+            row.input.parent().map(|p| {
+                if p.as_os_str().is_empty() {
+                    PathBuf::from(".")
+                } else {
+                    p.to_path_buf()
+                }
+            })
         })
+    }
+
+    /// Saves the current preferences; failures are logged inside
+    /// `settings::save` and never interrupt the session.
+    fn persist(&self) {
+        settings::save(&Settings {
+            out_dir: self.out_dir.clone(),
+            image_format: self.image_format,
+            video_format: self.video_format,
+            preset: self.preset,
+            allow_upscale: self.allow_upscale,
+        });
     }
 }
 
-/// Starts the next pending job, if any. Rows whose output directory cannot
-/// be created fail immediately and the queue moves on. Exactly one ffmpeg
-/// runs at a time.
+/// Starts the next pending job, if any and none is running. Rows whose
+/// output directory cannot be created fail immediately and the queue moves
+/// on. Exactly one ffmpeg runs at a time.
 fn start_next(app: &mut App) -> Task<Msg> {
-    let Some(out_dir) = app.effective_out_dir() else {
+    if app.running.is_some() {
         return Task::none();
-    };
+    }
     let Some(index) = app
         .rows
         .iter()
@@ -316,6 +331,13 @@ fn start_next(app: &mut App) -> Task<Msg> {
     else {
         app.running = None;
         return Task::none();
+    };
+
+    let Some(out_dir) = app.out_dir_for(&app.rows[index]) else {
+        let row = &mut app.rows[index];
+        row.status = Status::Failed;
+        row.error = Some("cannot determine output folder".into());
+        return start_next(app);
     };
 
     let row = &mut app.rows[index];
@@ -388,12 +410,25 @@ fn view(app: &App) -> Element<'_, Msg> {
         checkbox(app.allow_upscale)
             .label("Allow upscale")
             .on_toggle(Msg::ToggleUpscale),
+        text("Images →"),
+        pick_list(
+            ImageFormat::ALL,
+            Some(app.image_format),
+            Msg::SetDefaultImageFormat
+        ),
+        text("Videos →"),
+        pick_list(
+            VideoFormat::ALL,
+            Some(app.video_format),
+            Msg::SetDefaultVideoFormat
+        ),
         space().width(Length::Fill),
         text(format!(
             "Output: {}",
-            app.effective_out_dir()
+            app.out_dir
+                .as_ref()
                 .map(|p| p.display().to_string())
-                .unwrap_or_else(|| "—".into())
+                .unwrap_or_else(|| "same folder as each input".into())
         ))
         .size(13),
     ]
@@ -505,11 +540,90 @@ fn view_row(row: &Row) -> Element<'_, Msg> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
+
+    fn app() -> App {
+        App {
+            rows: Vec::new(),
+            next_id: 0,
+            out_dir: None,
+            image_format: ImageFormat::Jpeg,
+            video_format: VideoFormat::Mp4H264,
+            preset: Preset::Fhd,
+            allow_upscale: false,
+            ffmpeg_error: None,
+            cancel_flags: HashMap::new(),
+            running: None,
+        }
+    }
+
+    fn row(input: &str) -> Row {
+        Row {
+            id: 0,
+            input: PathBuf::from(input),
+            kind: MediaKind::from_path(Path::new(input)),
+            format: None,
+            status: Status::Pending,
+            progress: 0.0,
+            probe: None,
+            error: None,
+        }
+    }
 
     #[test]
-    fn preset_specs() {
-        assert_eq!(Preset::Fhd.spec(false), ResizeSpec::new(1920, 1080, false));
-        assert_eq!(Preset::Hd.spec(true), ResizeSpec::new(1280, 720, true));
-        assert_eq!(Preset::Uhd.spec(false), ResizeSpec::new(3840, 2160, false));
+    fn out_dir_defaults_to_input_folder() {
+        let app = app();
+        assert_eq!(
+            app.out_dir_for(&row("/media/clip.mp4")),
+            Some(PathBuf::from("/media"))
+        );
+    }
+
+    #[test]
+    fn chosen_out_dir_wins_over_input_folder() {
+        let mut app = app();
+        app.out_dir = Some(PathBuf::from("/chosen"));
+        assert_eq!(
+            app.out_dir_for(&row("/media/clip.mp4")),
+            Some(PathBuf::from("/chosen"))
+        );
+    }
+
+    #[test]
+    fn bare_filename_falls_back_to_current_dir() {
+        let app = app();
+        assert_eq!(app.out_dir_for(&row("clip.mp4")), Some(PathBuf::from(".")));
+    }
+
+    #[test]
+    fn added_files_get_persisted_default_formats() {
+        let mut app = app();
+        app.image_format = ImageFormat::WebP;
+        app.video_format = VideoFormat::WebMAv1;
+        let _ = update(
+            &mut app,
+            Msg::FilesAdded(vec![PathBuf::from("/a/photo.png")]),
+        );
+        let _ = update(
+            &mut app,
+            Msg::FilesAdded(vec![PathBuf::from("/a/clip.mkv")]),
+        );
+        assert_eq!(
+            app.rows[0].format,
+            Some(OutputFormat::Image(ImageFormat::WebP))
+        );
+        assert_eq!(
+            app.rows[1].format,
+            Some(OutputFormat::Video(VideoFormat::WebMAv1))
+        );
+    }
+
+    #[test]
+    fn start_next_is_a_no_op_while_running() {
+        let mut app = app();
+        app.running = Some(42);
+        let _ = update(&mut app, Msg::Start);
+        assert_eq!(app.running, Some(42));
+        assert!(app.rows.is_empty());
     }
 }

@@ -2,5 +2,6 @@
 
 pub mod app;
 pub mod backend;
+pub mod settings;
 
 pub use app::run;
