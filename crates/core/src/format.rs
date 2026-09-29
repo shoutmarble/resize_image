@@ -39,8 +39,7 @@ impl ImageFormat {
 }
 
 impl VideoFormat {
-    pub const ALL: &[VideoFormat] =
-        &[Self::Mp4H264, Self::Mp4Av1, Self::WebMVp9, Self::WebMAv1];
+    pub const ALL: &[VideoFormat] = &[Self::Mp4H264, Self::Mp4Av1, Self::WebMVp9, Self::WebMAv1];
 
     pub fn extension(self) -> &'static str {
         match self {
@@ -152,14 +151,28 @@ mod tests {
     fn all_for_returns_kind_formats() {
         assert_eq!(OutputFormat::all_for(MediaKind::Image).len(), 4);
         assert_eq!(OutputFormat::all_for(MediaKind::Video).len(), 4);
-        assert!(OutputFormat::all_for(MediaKind::Image).iter().all(|f| f.kind() == MediaKind::Image));
-        assert!(OutputFormat::all_for(MediaKind::Video).iter().all(|f| f.kind() == MediaKind::Video));
+        assert!(
+            OutputFormat::all_for(MediaKind::Image)
+                .iter()
+                .all(|f| f.kind() == MediaKind::Image)
+        );
+        assert!(
+            OutputFormat::all_for(MediaKind::Video)
+                .iter()
+                .all(|f| f.kind() == MediaKind::Video)
+        );
     }
 
     #[test]
     fn defaults() {
-        assert_eq!(OutputFormat::default_for(MediaKind::Image), OutputFormat::Image(ImageFormat::Jpeg));
-        assert_eq!(OutputFormat::default_for(MediaKind::Video), OutputFormat::Video(VideoFormat::Mp4H264));
+        assert_eq!(
+            OutputFormat::default_for(MediaKind::Image),
+            OutputFormat::Image(ImageFormat::Jpeg)
+        );
+        assert_eq!(
+            OutputFormat::default_for(MediaKind::Video),
+            OutputFormat::Video(VideoFormat::Mp4H264)
+        );
     }
 
     #[test]

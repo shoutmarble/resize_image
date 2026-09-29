@@ -19,8 +19,7 @@ pub struct ConversionJob {
 /// executable name, starting with `-i <input>` and ending with the output
 /// path. Global flags (`-y`, `-progress`, …) are prepended by the backend.
 pub fn build_ffmpeg_args(job: &ConversionJob) -> Vec<String> {
-    let (box_w, box_h) =
-        resize::effective_box(job.input_width, job.input_height, &job.resize);
+    let (box_w, box_h) = resize::effective_box(job.input_width, job.input_height, &job.resize);
     let mut args = vec!["-i".into(), job.input.to_string_lossy().into_owned()];
     match job.format {
         OutputFormat::Image(format) => {
@@ -145,10 +144,14 @@ mod tests {
         assert_eq!(
             build_ffmpeg_args(&args),
             vec![
-                "-i", "/in/src.mkv",
-                "-vf", "scale=w=1920:h=1080:force_original_aspect_ratio=decrease",
-                "-frames:v", "1",
-                "-q:v", "2",
+                "-i",
+                "/in/src.mkv",
+                "-vf",
+                "scale=w=1920:h=1080:force_original_aspect_ratio=decrease",
+                "-frames:v",
+                "1",
+                "-q:v",
+                "2",
                 "/out/dst.bin",
             ]
         );
@@ -160,9 +163,12 @@ mod tests {
         assert_eq!(
             build_ffmpeg_args(&args),
             vec![
-                "-i", "/in/src.mkv",
-                "-vf", "scale=w=1920:h=1080:force_original_aspect_ratio=decrease",
-                "-frames:v", "1",
+                "-i",
+                "/in/src.mkv",
+                "-vf",
+                "scale=w=1920:h=1080:force_original_aspect_ratio=decrease",
+                "-frames:v",
+                "1",
                 "/out/dst.bin",
             ]
         );
@@ -174,10 +180,16 @@ mod tests {
         assert_eq!(
             build_ffmpeg_args(&args),
             vec![
-                "-i", "/in/src.mkv",
-                "-vf", "scale=w=1920:h=1080:force_original_aspect_ratio=decrease",
-                "-frames:v", "1",
-                "-c:v", "libwebp", "-quality", "85",
+                "-i",
+                "/in/src.mkv",
+                "-vf",
+                "scale=w=1920:h=1080:force_original_aspect_ratio=decrease",
+                "-frames:v",
+                "1",
+                "-c:v",
+                "libwebp",
+                "-quality",
+                "85",
                 "/out/dst.bin",
             ]
         );
@@ -189,10 +201,20 @@ mod tests {
         assert_eq!(
             build_ffmpeg_args(&args),
             vec![
-                "-i", "/in/src.mkv",
-                "-vf", "scale=w=1920:h=1080:force_original_aspect_ratio=decrease",
-                "-frames:v", "1",
-                "-c:v", "libaom-av1", "-still-picture", "1", "-crf", "30", "-b:v", "0",
+                "-i",
+                "/in/src.mkv",
+                "-vf",
+                "scale=w=1920:h=1080:force_original_aspect_ratio=decrease",
+                "-frames:v",
+                "1",
+                "-c:v",
+                "libaom-av1",
+                "-still-picture",
+                "1",
+                "-crf",
+                "30",
+                "-b:v",
+                "0",
                 "/out/dst.bin",
             ]
         );
@@ -204,12 +226,24 @@ mod tests {
         assert_eq!(
             build_ffmpeg_args(&args),
             vec![
-                "-i", "/in/src.mkv",
-                "-vf", "scale=w=1920:h=1080:force_original_aspect_ratio=decrease:force_divisible_by=2",
-                "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-                "-pix_fmt", "yuv420p",
-                "-c:a", "aac", "-b:a", "160k",
-                "-movflags", "+faststart",
+                "-i",
+                "/in/src.mkv",
+                "-vf",
+                "scale=w=1920:h=1080:force_original_aspect_ratio=decrease:force_divisible_by=2",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "medium",
+                "-crf",
+                "20",
+                "-pix_fmt",
+                "yuv420p",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "160k",
+                "-movflags",
+                "+faststart",
                 "/out/dst.bin",
             ]
         );
@@ -221,12 +255,24 @@ mod tests {
         assert_eq!(
             build_ffmpeg_args(&args),
             vec![
-                "-i", "/in/src.mkv",
-                "-vf", "scale=w=1920:h=1080:force_original_aspect_ratio=decrease:force_divisible_by=2",
-                "-c:v", "libsvtav1", "-preset", "6", "-crf", "30",
-                "-pix_fmt", "yuv420p",
-                "-c:a", "aac", "-b:a", "160k",
-                "-movflags", "+faststart",
+                "-i",
+                "/in/src.mkv",
+                "-vf",
+                "scale=w=1920:h=1080:force_original_aspect_ratio=decrease:force_divisible_by=2",
+                "-c:v",
+                "libsvtav1",
+                "-preset",
+                "6",
+                "-crf",
+                "30",
+                "-pix_fmt",
+                "yuv420p",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "160k",
+                "-movflags",
+                "+faststart",
                 "/out/dst.bin",
             ]
         );
@@ -238,11 +284,24 @@ mod tests {
         assert_eq!(
             build_ffmpeg_args(&args),
             vec![
-                "-i", "/in/src.mkv",
-                "-vf", "scale=w=1920:h=1080:force_original_aspect_ratio=decrease:force_divisible_by=2",
-                "-c:v", "libvpx-vp9", "-crf", "32", "-b:v", "0", "-row-mt", "1",
-                "-pix_fmt", "yuv420p",
-                "-c:a", "libopus", "-b:a", "128k",
+                "-i",
+                "/in/src.mkv",
+                "-vf",
+                "scale=w=1920:h=1080:force_original_aspect_ratio=decrease:force_divisible_by=2",
+                "-c:v",
+                "libvpx-vp9",
+                "-crf",
+                "32",
+                "-b:v",
+                "0",
+                "-row-mt",
+                "1",
+                "-pix_fmt",
+                "yuv420p",
+                "-c:a",
+                "libopus",
+                "-b:a",
+                "128k",
                 "/out/dst.bin",
             ]
         );
@@ -254,11 +313,22 @@ mod tests {
         assert_eq!(
             build_ffmpeg_args(&args),
             vec![
-                "-i", "/in/src.mkv",
-                "-vf", "scale=w=1920:h=1080:force_original_aspect_ratio=decrease:force_divisible_by=2",
-                "-c:v", "libsvtav1", "-preset", "6", "-crf", "32",
-                "-pix_fmt", "yuv420p",
-                "-c:a", "libopus", "-b:a", "128k",
+                "-i",
+                "/in/src.mkv",
+                "-vf",
+                "scale=w=1920:h=1080:force_original_aspect_ratio=decrease:force_divisible_by=2",
+                "-c:v",
+                "libsvtav1",
+                "-preset",
+                "6",
+                "-crf",
+                "32",
+                "-pix_fmt",
+                "yuv420p",
+                "-c:a",
+                "libopus",
+                "-b:a",
+                "128k",
                 "/out/dst.bin",
             ]
         );
@@ -267,16 +337,22 @@ mod tests {
     #[test]
     fn no_upscale_clamps_box_into_filter() {
         let args = job(OutputFormat::Video(VideoFormat::Mp4H264), 1000, 500, false);
-        assert!(build_ffmpeg_args(&args).contains(
-            &"scale=w=1000:h=500:force_original_aspect_ratio=decrease:force_divisible_by=2".to_string()
-        ));
+        assert!(
+            build_ffmpeg_args(&args).contains(
+                &"scale=w=1000:h=500:force_original_aspect_ratio=decrease:force_divisible_by=2"
+                    .to_string()
+            )
+        );
     }
 
     #[test]
     fn allow_upscale_uses_full_box() {
         let args = job(OutputFormat::Video(VideoFormat::Mp4H264), 1000, 500, true);
-        assert!(build_ffmpeg_args(&args).contains(
-            &"scale=w=1920:h=1080:force_original_aspect_ratio=decrease:force_divisible_by=2".to_string()
-        ));
+        assert!(
+            build_ffmpeg_args(&args).contains(
+                &"scale=w=1920:h=1080:force_original_aspect_ratio=decrease:force_divisible_by=2"
+                    .to_string()
+            )
+        );
     }
 }

@@ -15,9 +15,11 @@ pub fn parse_progress_line(line: &str) -> Option<ProgressEvent> {
     let (key, value) = line.split_once('=')?;
     match key.trim() {
         // `out_time_ms` is a historical alias that is also in microseconds.
-        "out_time_us" | "out_time_ms" => {
-            value.trim().parse::<u64>().ok().map(ProgressEvent::OutTimeUs)
-        }
+        "out_time_us" | "out_time_ms" => value
+            .trim()
+            .parse::<u64>()
+            .ok()
+            .map(ProgressEvent::OutTimeUs),
         "progress" if value.trim() == "end" => Some(ProgressEvent::End),
         _ => None,
     }
@@ -39,18 +41,27 @@ mod tests {
 
     #[test]
     fn parses_out_time_us() {
-        assert_eq!(parse_progress_line("out_time_us=1500000"), Some(ProgressEvent::OutTimeUs(1_500_000)));
+        assert_eq!(
+            parse_progress_line("out_time_us=1500000"),
+            Some(ProgressEvent::OutTimeUs(1_500_000))
+        );
     }
 
     #[test]
     fn out_time_ms_is_microseconds_too() {
         // ffmpeg's historical naming bug: out_time_ms is also microseconds.
-        assert_eq!(parse_progress_line("out_time_ms=250000"), Some(ProgressEvent::OutTimeUs(250_000)));
+        assert_eq!(
+            parse_progress_line("out_time_ms=250000"),
+            Some(ProgressEvent::OutTimeUs(250_000))
+        );
     }
 
     #[test]
     fn parses_end_marker() {
-        assert_eq!(parse_progress_line("progress=end"), Some(ProgressEvent::End));
+        assert_eq!(
+            parse_progress_line("progress=end"),
+            Some(ProgressEvent::End)
+        );
         assert_eq!(parse_progress_line("progress=continue"), None);
     }
 

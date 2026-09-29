@@ -142,9 +142,7 @@ fn update(app: &mut App, msg: Msg) -> Task<Msg> {
                     .add_filter("Media files", &supported_extensions())
                     .pick_files()
                     .await
-                    .map(|handles| {
-                        handles.iter().map(|h| h.path().to_path_buf()).collect()
-                    })
+                    .map(|handles| handles.iter().map(|h| h.path().to_path_buf()).collect())
                     .unwrap_or_default()
             },
             Msg::FilesAdded,
@@ -164,7 +162,11 @@ fn update(app: &mut App, msg: Msg) -> Task<Msg> {
                     input: path.clone(),
                     kind,
                     format: kind.map(OutputFormat::default_for),
-                    status: if kind.is_some() { Status::Probing } else { Status::Unsupported },
+                    status: if kind.is_some() {
+                        Status::Probing
+                    } else {
+                        Status::Unsupported
+                    },
                     progress: 0.0,
                     probe: None,
                     error: None,
@@ -174,9 +176,7 @@ fn update(app: &mut App, msg: Msg) -> Task<Msg> {
                     tasks.push(Task::perform(
                         {
                             let path = path.clone();
-                            async move {
-                                backend::native::probe(&path).map_err(|e| e.to_string())
-                            }
+                            async move { backend::native::probe(&path).map_err(|e| e.to_string()) }
                         },
                         move |result| Msg::Probed(id, result),
                     ));
@@ -400,7 +400,11 @@ fn view(app: &App) -> Element<'_, Msg> {
     .spacing(12)
     .align_y(Alignment::Center);
 
-    let pending = app.rows.iter().filter(|r| r.status == Status::Pending).count();
+    let pending = app
+        .rows
+        .iter()
+        .filter(|r| r.status == Status::Pending)
+        .count();
     let mut start_button = button("Convert");
     if pending > 0 && app.ffmpeg_error.is_none() && app.running.is_none() {
         start_button = start_button.on_press(Msg::Start);
@@ -413,12 +417,7 @@ fn view(app: &App) -> Element<'_, Msg> {
         start_button,
         stop_button,
         button("Clear finished").on_press(Msg::ClearFinished),
-        text(format!(
-            "{} file(s), {} ready",
-            app.rows.len(),
-            pending
-        ))
-        .size(13),
+        text(format!("{} file(s), {} ready", app.rows.len(), pending)).size(13),
     ]
     .spacing(12)
     .align_y(Alignment::Center);
@@ -428,7 +427,11 @@ fn view(app: &App) -> Element<'_, Msg> {
         .iter()
         .fold(Column::new().spacing(8), |col, row| col.push(view_row(row)));
 
-    content = content.push(header).push(controls).push(actions).push(scrollable(list));
+    content = content
+        .push(header)
+        .push(controls)
+        .push(actions)
+        .push(scrollable(list));
     container(content).padding(16).into()
 }
 

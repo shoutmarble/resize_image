@@ -47,14 +47,22 @@ mod tests {
     #[test]
     fn detects_image_extensions_case_insensitively() {
         for ext in ["jpg", "jpeg", "png", "webp", "avif", "JPG", "Png", ".webp"] {
-            assert_eq!(MediaKind::from_extension(ext), Some(MediaKind::Image), "{ext}");
+            assert_eq!(
+                MediaKind::from_extension(ext),
+                Some(MediaKind::Image),
+                "{ext}"
+            );
         }
     }
 
     #[test]
     fn detects_video_extensions() {
         for ext in ["mp4", "mov", "mkv", "webm", "AVI"] {
-            assert_eq!(MediaKind::from_extension(ext), Some(MediaKind::Video), "{ext}");
+            assert_eq!(
+                MediaKind::from_extension(ext),
+                Some(MediaKind::Video),
+                "{ext}"
+            );
         }
     }
 
@@ -62,12 +70,21 @@ mod tests {
     fn rejects_unknown_extensions() {
         assert_eq!(MediaKind::from_extension("txt"), None);
         assert_eq!(MediaKind::from_extension(""), None);
-        assert_eq!(MediaKind::from_path(std::path::Path::new("no_extension")), None);
+        assert_eq!(
+            MediaKind::from_path(std::path::Path::new("no_extension")),
+            None
+        );
     }
 
     #[test]
     fn detects_from_path() {
-        assert_eq!(MediaKind::from_path(std::path::Path::new("/a/b/photo.JPEG")), Some(MediaKind::Image));
-        assert_eq!(MediaKind::from_path(std::path::Path::new("movie.mkv")), Some(MediaKind::Video));
+        assert_eq!(
+            MediaKind::from_path(std::path::Path::new("/a/b/photo.JPEG")),
+            Some(MediaKind::Image)
+        );
+        assert_eq!(
+            MediaKind::from_path(std::path::Path::new("movie.mkv")),
+            Some(MediaKind::Video)
+        );
     }
 }

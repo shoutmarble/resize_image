@@ -17,7 +17,15 @@ fn ffmpeg_available() -> bool {
 fn sample_image(dir: &Path) -> PathBuf {
     let path = dir.join("sample.png");
     let status = Command::new("ffmpeg")
-        .args(["-f", "lavfi", "-i", "testsrc=size=2560x1440", "-frames:v", "1", "-y"])
+        .args([
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=size=2560x1440",
+            "-frames:v",
+            "1",
+            "-y",
+        ])
         .arg(&path)
         .status()
         .expect("run ffmpeg");
@@ -30,9 +38,22 @@ fn sample_video(dir: &Path) -> PathBuf {
     let path = dir.join("sample.mp4");
     let status = Command::new("ffmpeg")
         .args([
-            "-f", "lavfi", "-i", "testsrc=size=640x360:duration=2:rate=15",
-            "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
-            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=size=640x360:duration=2:rate=15",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=440:duration=2",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-shortest",
+            "-y",
         ])
         .arg(&path)
         .status()
@@ -74,11 +95,16 @@ fn probe_rejects_garbage_file() {
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use wasmffmpeg_core::{
-    ConversionJob, ImageFormat, OutputFormat, ResizeSpec, VideoFormat,
-};
+use wasmffmpeg_core::{ConversionJob, ImageFormat, OutputFormat, ResizeSpec, VideoFormat};
 
-fn job(input: PathBuf, output: PathBuf, format: OutputFormat, w: u32, h: u32, upscale: bool) -> ConversionJob {
+fn job(
+    input: PathBuf,
+    output: PathBuf,
+    format: OutputFormat,
+    w: u32,
+    h: u32,
+    upscale: bool,
+) -> ConversionJob {
     ConversionJob {
         input,
         output,
@@ -89,7 +115,11 @@ fn job(input: PathBuf, output: PathBuf, format: OutputFormat, w: u32, h: u32, up
     }
 }
 
-fn run_convert(j: ConversionJob, duration: Option<f64>, cancel: Arc<AtomicBool>) -> Result<PathBuf, String> {
+fn run_convert(
+    j: ConversionJob,
+    duration: Option<f64>,
+    cancel: Arc<AtomicBool>,
+) -> Result<PathBuf, String> {
     futures::executor::block_on(native::convert(j, duration, cancel)).map_err(|e| e.to_string())
 }
 
@@ -101,9 +131,21 @@ fn converts_image_to_all_image_formats() {
     }
     let dir = tempfile::tempdir().unwrap();
     let input = sample_image(dir.path()); // 2560x1440
-    for format in [ImageFormat::Jpeg, ImageFormat::Png, ImageFormat::WebP, ImageFormat::Avif] {
+    for format in [
+        ImageFormat::Jpeg,
+        ImageFormat::Png,
+        ImageFormat::WebP,
+        ImageFormat::Avif,
+    ] {
         let output = dir.path().join(format!("out.{}", format.extension()));
-        let j = job(input.clone(), output.clone(), OutputFormat::Image(format), 2560, 1440, false);
+        let j = job(
+            input.clone(),
+            output.clone(),
+            OutputFormat::Image(format),
+            2560,
+            1440,
+            false,
+        );
         let produced = run_convert(j, None, Arc::new(AtomicBool::new(false)))
             .unwrap_or_else(|e| panic!("{format:?} failed: {e}"));
         assert!(produced.exists() && std::fs::metadata(&produced).unwrap().len() > 0);
@@ -121,9 +163,23 @@ fn converts_video_to_all_video_formats() {
     }
     let dir = tempfile::tempdir().unwrap();
     let input = sample_video(dir.path()); // 640x360, no upscale by default
-    for format in [VideoFormat::Mp4H264, VideoFormat::Mp4Av1, VideoFormat::WebMVp9, VideoFormat::WebMAv1] {
-        let output = dir.path().join(format!("out-{format:?}.{}", format.extension()));
-        let j = job(input.clone(), output.clone(), OutputFormat::Video(format), 640, 360, false);
+    for format in [
+        VideoFormat::Mp4H264,
+        VideoFormat::Mp4Av1,
+        VideoFormat::WebMVp9,
+        VideoFormat::WebMAv1,
+    ] {
+        let output = dir
+            .path()
+            .join(format!("out-{format:?}.{}", format.extension()));
+        let j = job(
+            input.clone(),
+            output.clone(),
+            OutputFormat::Video(format),
+            640,
+            360,
+            false,
+        );
         let produced = run_convert(j, Some(2.0), Arc::new(AtomicBool::new(false)))
             .unwrap_or_else(|e| panic!("{format:?} failed: {e}"));
         assert!(produced.exists() && std::fs::metadata(&produced).unwrap().len() > 0);
@@ -142,7 +198,14 @@ fn upscale_flag_scales_small_video_to_1080p() {
     let dir = tempfile::tempdir().unwrap();
     let input = sample_video(dir.path());
     let output = dir.path().join("upscaled.mp4");
-    let j = job(input, output.clone(), OutputFormat::Video(VideoFormat::Mp4H264), 640, 360, true);
+    let j = job(
+        input,
+        output.clone(),
+        OutputFormat::Video(VideoFormat::Mp4H264),
+        640,
+        360,
+        true,
+    );
     run_convert(j, Some(2.0), Arc::new(AtomicBool::new(false))).unwrap();
     let info = native::probe(&output).unwrap();
     assert_eq!((info.width, info.height), (1920, 1080));
@@ -158,7 +221,15 @@ fn cancel_stops_conversion_and_removes_partial_output() {
     // 60 s of video so the encode cannot finish before the cancel lands.
     let long_input = dir.path().join("long.mp4");
     let status = Command::new("ffmpeg")
-        .args(["-f", "lavfi", "-i", "testsrc=size=640x360:duration=60:rate=10", "-c:v", "libx264", "-y"])
+        .args([
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=size=640x360:duration=60:rate=10",
+            "-c:v",
+            "libx264",
+            "-y",
+        ])
         .arg(&long_input)
         .status()
         .unwrap();
@@ -171,7 +242,14 @@ fn cancel_stops_conversion_and_removes_partial_output() {
         std::thread::sleep(std::time::Duration::from_millis(400));
         flag.store(true, Ordering::Relaxed);
     });
-    let j = job(long_input, output.clone(), OutputFormat::Video(VideoFormat::Mp4H264), 640, 360, false);
+    let j = job(
+        long_input,
+        output.clone(),
+        OutputFormat::Video(VideoFormat::Mp4H264),
+        640,
+        360,
+        false,
+    );
     let result = run_convert(j, Some(60.0), cancel);
     assert_eq!(result, Err("cancelled".to_string()));
     assert!(!output.exists(), "partial output must be removed");

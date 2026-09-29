@@ -26,11 +26,19 @@ mod tests {
     #[test]
     fn replaces_extension_with_format_extension() {
         assert_eq!(
-            candidate_name(Path::new("/a/b/photo.png"), OutputFormat::Image(ImageFormat::Jpeg), None),
+            candidate_name(
+                Path::new("/a/b/photo.png"),
+                OutputFormat::Image(ImageFormat::Jpeg),
+                None
+            ),
             "photo.jpg"
         );
         assert_eq!(
-            candidate_name(Path::new("movie.mkv"), OutputFormat::Video(VideoFormat::WebMAv1), None),
+            candidate_name(
+                Path::new("movie.mkv"),
+                OutputFormat::Video(VideoFormat::WebMAv1),
+                None
+            ),
             "movie.webm"
         );
     }
@@ -38,11 +46,19 @@ mod tests {
     #[test]
     fn suffix_goes_before_extension() {
         assert_eq!(
-            candidate_name(Path::new("photo.png"), OutputFormat::Image(ImageFormat::WebP), Some(1)),
+            candidate_name(
+                Path::new("photo.png"),
+                OutputFormat::Image(ImageFormat::WebP),
+                Some(1)
+            ),
             "photo_1.webp"
         );
         assert_eq!(
-            candidate_name(Path::new("photo.png"), OutputFormat::Image(ImageFormat::WebP), Some(12)),
+            candidate_name(
+                Path::new("photo.png"),
+                OutputFormat::Image(ImageFormat::WebP),
+                Some(12)
+            ),
             "photo_12.webp"
         );
     }
@@ -50,11 +66,19 @@ mod tests {
     #[test]
     fn handles_multi_dot_and_extensionless_names() {
         assert_eq!(
-            candidate_name(Path::new("archive.tar.gz"), OutputFormat::Image(ImageFormat::Png), None),
+            candidate_name(
+                Path::new("archive.tar.gz"),
+                OutputFormat::Image(ImageFormat::Png),
+                None
+            ),
             "archive.tar.png"
         );
         assert_eq!(
-            candidate_name(Path::new("noext"), OutputFormat::Video(VideoFormat::Mp4H264), None),
+            candidate_name(
+                Path::new("noext"),
+                OutputFormat::Video(VideoFormat::Mp4H264),
+                None
+            ),
             "noext.mp4"
         );
     }

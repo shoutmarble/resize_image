@@ -11,13 +11,21 @@ pub struct ResizeSpec {
 
 impl ResizeSpec {
     pub fn new(width: u32, height: u32, allow_upscale: bool) -> Self {
-        Self { width, height, allow_upscale }
+        Self {
+            width,
+            height,
+            allow_upscale,
+        }
     }
 }
 
 impl Default for ResizeSpec {
     fn default() -> Self {
-        Self { width: 1920, height: 1080, allow_upscale: false }
+        Self {
+            width: 1920,
+            height: 1080,
+            allow_upscale: false,
+        }
     }
 }
 
@@ -38,8 +46,7 @@ pub fn effective_box(input_w: u32, input_h: u32, spec: &ResizeSpec) -> (u32, u32
 /// preserving aspect ratio. `even_only` adds `force_divisible_by=2`, which
 /// yuv420p video codecs require.
 pub fn scale_filter(box_w: u32, box_h: u32, even_only: bool) -> String {
-    let mut filter =
-        format!("scale=w={box_w}:h={box_h}:force_original_aspect_ratio=decrease");
+    let mut filter = format!("scale=w={box_w}:h={box_h}:force_original_aspect_ratio=decrease");
     if even_only {
         filter.push_str(":force_divisible_by=2");
     }
@@ -56,7 +63,14 @@ mod tests {
 
     #[test]
     fn default_is_1080p_no_upscale() {
-        assert_eq!(spec(), ResizeSpec { width: 1920, height: 1080, allow_upscale: false });
+        assert_eq!(
+            spec(),
+            ResizeSpec {
+                width: 1920,
+                height: 1080,
+                allow_upscale: false
+            }
+        );
     }
 
     #[test]

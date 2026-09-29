@@ -46,10 +46,14 @@ struct ProbeFormat {
 pub fn probe(input: &Path) -> Result<ProbeInfo, BackendError> {
     let output = Command::new("ffprobe")
         .args([
-            "-v", "error",
-            "-select_streams", "v:0",
-            "-show_entries", "stream=width,height:format=duration",
-            "-of", "json",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height:format=duration",
+            "-of",
+            "json",
         ])
         .arg(input)
         .output()
@@ -71,7 +75,11 @@ pub fn probe(input: &Path) -> Result<ProbeInfo, BackendError> {
         .format
         .and_then(|f| f.duration)
         .and_then(|d| d.parse::<f64>().ok());
-    Ok(ProbeInfo { width, height, duration_secs })
+    Ok(ProbeInfo {
+        width,
+        height,
+        duration_secs,
+    })
 }
 
 /// Keeps only the last ~4 KiB of stderr for display.
@@ -142,7 +150,13 @@ fn run_ffmpeg(
 ) -> Result<PathBuf, BackendError> {
     let mut child = Command::new("ffmpeg")
         .args([
-            "-hide_banner", "-nostdin", "-y", "-progress", "pipe:1", "-stats_period", "0.5",
+            "-hide_banner",
+            "-nostdin",
+            "-y",
+            "-progress",
+            "pipe:1",
+            "-stats_period",
+            "0.5",
         ])
         .args(build_ffmpeg_args(job))
         .stdout(Stdio::piped())
