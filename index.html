@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7fb">
+    <title>Resize Image or Video</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <a class="brand" href="./" aria-label="Resize Studio home">
+          <span class="brand-mark" aria-hidden="true">↗</span>
+          <span>resize<span class="brand-light">studio</span></span>
+        </a>
+        <span class="privacy-note"><span aria-hidden="true">●</span> Files stay on your device</span>
+      </header>
+
+      <section class="intro">
+        <p class="eyebrow">A little less file, a lot more flexible</p>
+        <h1>Resize it.<br><span>Keep it yours.</span></h1>
+        <p class="intro-copy">Resize images and videos right in your browser. No uploads, no fuss.</p>
+      </section>
+
+      <section class="workspace" aria-label="Media resizer">
+        <div class="drop-zone" id="drop-zone" role="button" tabindex="0" aria-label="Choose or drop an image or video">
+          <div class="drop-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none"><path d="M24 32V8m0 0L15 17m9-9 9 9M10 29v9a2 2 0 0 0 2 2h24a2 2 0 0 0 2-2v-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h2>Drop your file here</h2>
+          <p>or <button class="text-button" id="browse-button" type="button">browse files</button></p>
+          <span class="file-hint">Images and videos · Up to 500 MB</span>
+          <input id="file-input" type="file" accept="image/*,video/*" hidden>
+        </div>
+
+        <div class="editor" id="editor" hidden>
+          <div class="preview-panel">
+            <div class="preview-heading">
+              <span class="section-label">PREVIEW</span>
+              <span class="media-badge" id="media-badge"></span>
+            </div>
+            <div class="preview-frame" id="preview-frame">
+              <img id="image-preview" alt="Selected image preview" hidden>
+              <video id="video-preview" controls playsinline hidden></video>
+              <div class="empty-preview" id="empty-preview" aria-hidden="true">Your preview will appear here</div>
+            </div>
+            <div class="file-details">
+              <div class="file-name" id="file-name"></div>
+              <div class="file-meta" id="file-meta"></div>
+            </div>
+          </div>
+
+          <div class="settings-panel">
+            <div class="settings-heading">
+              <span class="section-label">SIZE &amp; EXPORT</span>
+              <button class="text-button change-file" id="change-file" type="button">Change file</button>
+            </div>
+            <div class="dimensions">
+              <label>Width <span class="unit">px</span><input id="width-input" type="number" min="1" max="16384" inputmode="numeric"></label>
+              <span class="dimension-times" aria-hidden="true">×</span>
+              <label>Height <span class="unit">px</span><input id="height-input" type="number" min="1" max="16384" inputmode="numeric"></label>
+            </div>
+            <label class="check-row">
+              <input id="aspect-lock" type="checkbox" checked>
+              <span class="checkmark" aria-hidden="true"></span>
+              <span>Keep aspect ratio</span>
+              <span class="lock-icon" aria-hidden="true">⌁</span>
+            </label>
+
+            <div class="image-options" id="image-options">
+              <label class="field-label" for="format-select">Export format</label>
+              <select id="format-select">
+                <option value="image/jpeg">JPG</option>
+                <option value="image/png">PNG</option>
+                <option value="image/webp">WebP</option>
+              </select>
+              <label class="quality-label" for="quality-input">Quality <span id="quality-value">85%</span></label>
+              <input id="quality-input" type="range" min="10" max="100" value="85">
+              <p class="option-note">Quality applies to JPG and WebP exports.</p>
+            </div>
+
+            <div class="video-note" id="video-note" hidden>
+              <span class="video-note-icon" aria-hidden="true">▶</span>
+              <p>Videos export as WebM. Keep this tab open while your video is processing.</p>
+            </div>
+
+            <button class="resize-button" id="resize-button" type="button">
+              <span>Resize &amp; download</span><span aria-hidden="true">↗</span>
+            </button>
+            <div class="progress-wrap" id="progress-wrap" hidden>
+              <div class="progress-track"><span id="progress-bar"></span></div>
+              <div class="progress-caption"><span id="status-text">Preparing…</span><span id="progress-value"></span></div>
+            </div>
+            <p class="error-message" id="error-message" role="alert" hidden></p>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>Simple tools. Yours to use.</span>
+        <span>Image resizing uses your browser’s canvas. Video export requires WebM support.</span>
+      </footer>
+    </main>
+  </body>
+</html>
