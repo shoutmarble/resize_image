@@ -1,5 +1,7 @@
 # wasmffmpeg
 
+![wasmffmpeg main window](docs/screenshot.png)
+
 Desktop media converter built with Rust, [iced](https://iced.rs) 0.14 and
 FFmpeg. Converts and resizes images (JPEG, PNG, WebP, AVIF) and videos
 (MP4 H.264/AV1, WebM VP9/AV1), one file or in bulk. Everything is scaled to
@@ -23,6 +25,16 @@ formats, size preset and the upscale flag persist between restarts.
 ```bash
 cargo run -p wasmffmpeg-gui
 ```
+
+## Build a release binary
+
+```bash
+cargo build --release -p wasmffmpeg-gui
+# → target/release/wasmffmpeg-gui  (LTO-optimized, ~15 MB)
+```
+
+Prebuilt binaries for tagged versions are attached to
+[GitHub Releases](https://github.com/shoutmarble/resize_image/releases).
 
 ## Test
 
