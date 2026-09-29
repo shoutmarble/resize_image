@@ -5,6 +5,8 @@
 
 pub mod format;
 pub mod media;
+pub mod resize;
 
 pub use format::{ImageFormat, OutputFormat, VideoFormat};
 pub use media::MediaKind;
+pub use resize::{ResizeSpec, effective_box, scale_filter};
