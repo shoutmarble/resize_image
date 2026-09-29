@@ -5,7 +5,7 @@ members = ["crates/core", "crates/gui"]
 [workspace.package]
 edition = "2024"
 license = "MIT OR Apache-2.0"
-version = "0.1.2"
+version = "0.1.3"
 
 [profile.release]
 lto = true
