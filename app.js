@@ -14,6 +14,8 @@ const progressBar = document.querySelector("#progress-bar");
 const statusText = document.querySelector("#status-text");
 const progressValue = document.querySelector("#progress-value");
 const errorMessage = document.querySelector("#error-message");
+const imageTypes = new Set(["image/avif", "image/bmp", "image/gif", "image/jpeg", "image/png", "image/webp"]);
+const videoTypes = new Set(["video/mp4", "video/ogg", "video/quicktime", "video/webm", "video/x-matroska", "video/x-msvideo"]);
 
 let selectedFile;
 let previewUrl;
@@ -63,9 +65,10 @@ document.querySelector("#quality-input").addEventListener("input", (event) => {
 document.querySelector("#resize-button").addEventListener("click", resizeAndDownload);
 
 function loadFile(file) {
-  const type = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "";
+  const mimeType = file.type.toLowerCase();
+  const type = imageTypes.has(mimeType) ? "image" : videoTypes.has(mimeType) ? "video" : "";
   if (!type) {
-    showError("Choose a supported image or video file.");
+    showError("Choose a JPG, PNG, WebP, GIF, BMP, AVIF, or supported video file.");
     return;
   }
   if (file.size > 500 * 1024 * 1024) {
@@ -76,7 +79,7 @@ function loadFile(file) {
   releasePreviewUrl();
   selectedFile = file;
   mediaType = type;
-  previewUrl = URL.createObjectURL(file);
+  previewUrl = URL.createObjectURL(new Blob([file], { type: mimeType }));
   document.querySelector("#file-name").textContent = file.name;
   document.querySelector("#file-meta").textContent = formatBytes(file.size);
   document.querySelector("#media-badge").textContent = type;
