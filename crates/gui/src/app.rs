@@ -480,25 +480,47 @@ fn view(app: &App) -> Element<'_, Msg> {
         .fold(Column::new().spacing(8), |col, row| col.push(view_row(row)));
 
     let hovering = app.drag_hover;
-    let drop_zone = container(
-        text(if hovering {
-            "Release to add — conversion starts immediately"
-        } else {
-            "Drag & drop images/videos anywhere here — conversion starts automatically"
-        })
-        .size(15),
-    )
-    .width(Length::Fill)
-    .padding(28)
-    .center_x(Length::Fill)
-    .style(move |theme: &Theme| drop_zone_style(theme, hovering));
+    // The drop zone swallows all remaining window space, so the drop target
+    // always reaches the bottom edge no matter how the window is resized.
+    // The queue list lives inside it once files exist.
+    let zone_body: Element<'_, Msg> = if app.rows.is_empty() {
+        container(
+            text(if hovering {
+                "Release to add — conversion starts immediately"
+            } else {
+                "Drag & drop images/videos anywhere here — conversion starts automatically"
+            })
+            .size(15),
+        )
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .center_x(Length::Fill)
+        .center_y(Length::Fill)
+        .into()
+    } else {
+        column![
+            text(if hovering {
+                "Release to add — conversion starts immediately"
+            } else {
+                "Drop more files here — conversion starts automatically"
+            })
+            .size(12),
+            scrollable(list),
+        ]
+        .spacing(8)
+        .into()
+    };
+    let drop_zone = container(zone_body)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .padding(12)
+        .style(move |theme: &Theme| drop_zone_style(theme, hovering));
 
     content = content
         .push(header)
         .push(controls)
         .push(actions)
-        .push(drop_zone)
-        .push(scrollable(list));
+        .push(drop_zone);
     container(content).padding(16).into()
 }
 
