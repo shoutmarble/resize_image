@@ -30,6 +30,15 @@ formats, size preset and the upscale flag persist between restarts.
 cargo run -p wasmffmpeg-gui
 ```
 
+> **Linux / Wayland note:** winit (iced's windowing library) does not
+> implement file drag & drop on Wayland yet
+> ([winit#1881](https://github.com/rust-windowing/winit/issues/1881),
+> [iced#2538](https://github.com/iced-rs/iced/issues/2538)). On Wayland
+> sessions with XWayland available, the app therefore starts on the X11
+> backend automatically so dropping files works. Set
+> `WASMFFMPEG_NATIVE_WAYLAND=1` to run on native Wayland instead (the
+> "Add files" dialog works everywhere).
+
 ## Build a release binary
 
 ```bash

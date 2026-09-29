@@ -81,6 +81,7 @@ pub enum Msg {
 
 /// Application entry point called from `main`.
 pub fn run() -> iced::Result {
+    prefer_x11_for_drag_and_drop();
     iced::application(boot, update, view)
         .subscription(subscription)
         .theme(Theme::Dark)
@@ -94,6 +95,36 @@ pub fn run() -> iced::Result {
         .centered()
         .run()
 }
+
+/// Routes the app through XWayland on Linux/Wayland sessions.
+///
+/// winit's Wayland backend does not implement file drag & drop
+/// (rust-windowing/winit#1881, iced-rs/iced#2538), so on Wayland
+/// `FileDropped`/`FileHovered` never fire. Running under X11 makes them
+/// work. Only applies when an X server is actually available (`DISPLAY`),
+/// i.e. XWayland. Set `WASMFFMPEG_NATIVE_WAYLAND=1` to keep native Wayland
+/// (drop stays broken there until winit ships its new DnD API in iced).
+#[cfg(target_os = "linux")]
+fn prefer_x11_for_drag_and_drop() {
+    if std::env::var_os("WASMFFMPEG_NATIVE_WAYLAND").is_some() {
+        return;
+    }
+    if std::env::var_os("WAYLAND_DISPLAY").is_some() && std::env::var_os("DISPLAY").is_some() {
+        // SAFETY: called at process start, before iced/winit spins up any
+        // threads, so no concurrent env access can occur.
+        unsafe {
+            std::env::set_var("WINIT_UNIX_BACKEND", "x11");
+            std::env::remove_var("WAYLAND_DISPLAY");
+        }
+        eprintln!(
+            "wasmffmpeg: using the X11 backend so drag & drop works \
+             (set WASMFFMPEG_NATIVE_WAYLAND=1 to use native Wayland instead)"
+        );
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn prefer_x11_for_drag_and_drop() {}
 
 pub fn boot() -> (App, Task<Msg>) {
     let ffmpeg_error = backend::check_ffmpeg_available().err();
