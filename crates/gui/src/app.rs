@@ -302,10 +302,56 @@ impl App {
     }
 }
 
-/// Starts the next pending job. Filled in by Task 9; for now it only
-/// validates that there is work, so the shell compiles and runs.
-fn start_next(_app: &mut App) -> Task<Msg> {
-    Task::none()
+/// Starts the next pending job, if any. Rows whose output directory cannot
+/// be created fail immediately and the queue moves on. Exactly one ffmpeg
+/// runs at a time.
+fn start_next(app: &mut App) -> Task<Msg> {
+    let Some(out_dir) = app.effective_out_dir() else {
+        return Task::none();
+    };
+    let Some(index) = app
+        .rows
+        .iter()
+        .position(|r| r.status == Status::Pending && r.probe.is_some())
+    else {
+        app.running = None;
+        return Task::none();
+    };
+
+    let row = &mut app.rows[index];
+    let id = row.id;
+    let probe = row.probe.expect("checked above");
+    let format = row.format.expect("pending rows always have a format");
+
+    if let Err(e) = std::fs::create_dir_all(&out_dir) {
+        row.status = Status::Failed;
+        row.error = Some(format!("cannot create output folder: {e}"));
+        return start_next(app);
+    }
+
+    let output = backend::native::unique_output_path(&out_dir, &row.input, format);
+    row.status = Status::Running;
+    row.progress = 0.0;
+
+    let flag = Arc::new(AtomicBool::new(false));
+    app.cancel_flags.insert(id, flag.clone());
+    app.running = Some(id);
+
+    let job = wasmffmpeg_core::ConversionJob {
+        input: row.input.clone(),
+        output,
+        format,
+        input_width: probe.width,
+        input_height: probe.height,
+        resize: app.preset.spec(app.allow_upscale),
+    };
+    let duration = probe.duration_secs;
+    let sipper = backend::native::convert(job, duration, flag);
+    Task::sip(
+        sipper,
+        move |progress| Msg::JobProgress(id, progress),
+        move |output| Msg::JobFinished(id, output),
+    )
 }
 
 fn subscription(_app: &App) -> Subscription<Msg> {
