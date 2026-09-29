@@ -2,6 +2,7 @@
 name = "wasmffmpeg-gui"
 edition.workspace = true
 license.workspace = true
+version.workspace = true
 
 [dependencies]
 wasmffmpeg-core = { path = "../core" }

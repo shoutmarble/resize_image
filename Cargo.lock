@@ -3880,11 +3880,11 @@ dependencies = [
 
 [[package]]
 name = "wasmffmpeg-core"
-version = "0.0.0"
+version = "0.1.2"
 
 [[package]]
 name = "wasmffmpeg-gui"
-version = "0.0.0"
+version = "0.1.2"
 dependencies = [
  "chrono",
  "futures",
