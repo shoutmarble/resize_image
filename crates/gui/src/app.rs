@@ -48,6 +48,7 @@ pub struct App {
     ffmpeg_error: Option<String>,
     cancel_flags: HashMap<JobId, Arc<AtomicBool>>,
     running: Option<JobId>,
+    drag_hover: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +58,7 @@ pub enum Msg {
     PickOutputDir,
     OutputDirPicked(Option<PathBuf>),
     FileDropped(PathBuf),
+    DragHover(bool),
     Probed(JobId, Result<ProbeInfo, String>),
     SetRowFormat(JobId, OutputFormat),
     SetDefaultImageFormat(ImageFormat),
@@ -98,6 +100,7 @@ pub fn boot() -> (App, Task<Msg>) {
             ffmpeg_error,
             cancel_flags: HashMap::new(),
             running: None,
+            drag_hover: false,
         },
         Task::none(),
     )
@@ -125,7 +128,14 @@ fn update(app: &mut App, msg: Msg) -> Task<Msg> {
             },
             Msg::FilesAdded,
         ),
-        Msg::FileDropped(path) => update(app, Msg::FilesAdded(vec![path])),
+        Msg::FileDropped(path) => {
+            app.drag_hover = false;
+            update(app, Msg::FilesAdded(vec![path]))
+        }
+        Msg::DragHover(hovering) => {
+            app.drag_hover = hovering;
+            Task::none()
+        }
         Msg::FilesAdded(paths) => {
             let mut tasks = Vec::new();
             for path in paths {
@@ -351,7 +361,12 @@ fn start_next(app: &mut App) -> Task<Msg> {
         return start_next(app);
     }
 
-    let output = backend::native::unique_output_path(&out_dir, &row.input, format);
+    let output = backend::native::unique_output_path(
+        &out_dir,
+        &row.input,
+        format,
+        &backend::native::timestamp_now(),
+    );
     row.status = Status::Running;
     row.progress = 0.0;
 
@@ -378,7 +393,9 @@ fn start_next(app: &mut App) -> Task<Msg> {
 
 fn subscription(_app: &App) -> Subscription<Msg> {
     event::listen().filter_map(|event| match event {
+        iced::Event::Window(window::Event::FileHovered(_)) => Some(Msg::DragHover(true)),
         iced::Event::Window(window::Event::FileDropped(path)) => Some(Msg::FileDropped(path)),
+        iced::Event::Window(window::Event::FilesHoveredLeft) => Some(Msg::DragHover(false)),
         _ => None,
     })
 }
@@ -462,12 +479,49 @@ fn view(app: &App) -> Element<'_, Msg> {
         .iter()
         .fold(Column::new().spacing(8), |col, row| col.push(view_row(row)));
 
+    let hovering = app.drag_hover;
+    let drop_zone = container(
+        text(if hovering {
+            "Release to add — conversion starts immediately"
+        } else {
+            "Drag & drop images/videos anywhere here — conversion starts automatically"
+        })
+        .size(15),
+    )
+    .width(Length::Fill)
+    .padding(28)
+    .center_x(Length::Fill)
+    .style(move |theme: &Theme| drop_zone_style(theme, hovering));
+
     content = content
         .push(header)
         .push(controls)
         .push(actions)
+        .push(drop_zone)
         .push(scrollable(list));
     container(content).padding(16).into()
+}
+
+/// Highlights the drop zone while files hover over the window.
+fn drop_zone_style(theme: &Theme, hovering: bool) -> container::Style {
+    let palette = theme.extended_palette();
+    let (border_color, background) = if hovering {
+        (palette.primary.strong.color, palette.primary.weak.color)
+    } else {
+        (
+            palette.background.strong.color,
+            palette.background.weak.color,
+        )
+    };
+    container::Style {
+        border: iced::Border {
+            color: border_color,
+            width: 2.0,
+            radius: 8.0.into(),
+        },
+        background: Some(iced::Background::Color(background)),
+        ..Default::default()
+    }
 }
 
 fn view_row(row: &Row) -> Element<'_, Msg> {
@@ -554,6 +608,7 @@ mod tests {
             ffmpeg_error: None,
             cancel_flags: HashMap::new(),
             running: None,
+            drag_hover: false,
         }
     }
 
@@ -625,5 +680,15 @@ mod tests {
         let _ = update(&mut app, Msg::Start);
         assert_eq!(app.running, Some(42));
         assert!(app.rows.is_empty());
+    }
+
+    #[test]
+    fn drag_hover_toggles_and_drop_clears_it() {
+        let mut app = app();
+        let _ = update(&mut app, Msg::DragHover(true));
+        assert!(app.drag_hover);
+        let _ = update(&mut app, Msg::FileDropped(PathBuf::from("/a/photo.png")));
+        assert!(!app.drag_hover);
+        assert_eq!(app.rows.len(), 1);
     }
 }

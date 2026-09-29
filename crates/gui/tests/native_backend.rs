@@ -260,12 +260,19 @@ fn unique_output_path_never_overwrites() {
     let dir = tempfile::tempdir().unwrap();
     let input = PathBuf::from("/in/photo.png");
     let format = OutputFormat::Image(ImageFormat::Jpeg);
-    let first = native::unique_output_path(dir.path(), &input, format);
-    assert_eq!(first, dir.path().join("photo.jpg"));
+    let ts = "2026-09-28--14-30-05";
+    let first = native::unique_output_path(dir.path(), &input, format, ts);
+    assert_eq!(first, dir.path().join("RS-2026-09-28--14-30-05-photo.jpg"));
     std::fs::write(&first, b"x").unwrap();
-    let second = native::unique_output_path(dir.path(), &input, format);
-    assert_eq!(second, dir.path().join("photo_1.jpg"));
+    let second = native::unique_output_path(dir.path(), &input, format, ts);
+    assert_eq!(
+        second,
+        dir.path().join("RS-2026-09-28--14-30-05-photo_1.jpg")
+    );
     std::fs::write(&second, b"x").unwrap();
-    let third = native::unique_output_path(dir.path(), &input, format);
-    assert_eq!(third, dir.path().join("photo_2.jpg"));
+    let third = native::unique_output_path(dir.path(), &input, format, ts);
+    assert_eq!(
+        third,
+        dir.path().join("RS-2026-09-28--14-30-05-photo_2.jpg")
+    );
 }

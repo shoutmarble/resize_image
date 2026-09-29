@@ -95,16 +95,31 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use wasmffmpeg_core::{
-    ConversionJob, OutputFormat, ProgressEvent, build_ffmpeg_args, candidate_name, fraction,
-    parse_progress_line,
+    ConversionJob, OutputFormat, ProgressEvent, build_ffmpeg_args, fraction, parse_progress_line,
+    resized_name,
 };
 
+/// Current local time in the output-name format: `yyyy-MM-dd--HH-mm-ss`
+/// (dashes only — colons are illegal in Windows file names).
+pub fn timestamp_now() -> String {
+    chrono::Local::now()
+        .format("%Y-%m-%d--%H-%M-%S")
+        .to_string()
+}
+
 /// Picks a non-existing output path inside `dir`, incrementing a `_N`
-/// suffix until the name is free. Never overwrites.
-pub fn unique_output_path(dir: &Path, input: &Path, format: OutputFormat) -> PathBuf {
+/// suffix until the name is free. Never overwrites. The timestamp is
+/// supplied by the caller so a batch can share one and tests stay
+/// deterministic — see [`timestamp_now`].
+pub fn unique_output_path(
+    dir: &Path,
+    input: &Path,
+    format: OutputFormat,
+    timestamp: &str,
+) -> PathBuf {
     let mut suffix = None;
     loop {
-        let candidate = dir.join(candidate_name(input, format, suffix));
+        let candidate = dir.join(resized_name(input, format, timestamp, suffix));
         if !candidate.exists() {
             return candidate;
         }

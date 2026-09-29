@@ -6,6 +6,13 @@ FFmpeg. Converts and resizes images (JPEG, PNG, WebP, AVIF) and videos
 fit inside **1920×1080** (configurable) while preserving aspect ratio;
 upscaling is off by default.
 
+Drag & drop files anywhere onto the window (or use the file dialog) and
+conversion starts immediately. Outputs land next to each input file — or in
+your chosen folder — and are named
+`RS-yyyy-MM-dd--HH-mm-ss-<first 7 chars of the original name>.<ext>`
+(`RS` = resized), never overwriting anything. Output folder, default
+formats, size preset and the upscale flag persist between restarts.
+
 ## Requirements
 
 - Rust 1.98+ (`rustup`)
