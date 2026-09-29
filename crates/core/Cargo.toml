@@ -1,0 +1,6 @@
+[package]
+name = "wasmffmpeg-core"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
