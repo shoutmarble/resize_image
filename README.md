@@ -1,5 +1,9 @@
 # wasmffmpeg
 
+<p align="center">
+  <img src="crates/gui/assets/icons/icon_128.png" width="128" alt="wasmffmpeg icon">
+</p>
+
 ![wasmffmpeg main window](docs/screenshot.png)
 
 Desktop media converter built with Rust, [iced](https://iced.rs) 0.14 and

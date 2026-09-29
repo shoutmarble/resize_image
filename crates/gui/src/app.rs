@@ -3,8 +3,8 @@
 use crate::backend::{self, ProbeInfo};
 use crate::settings::{self, Preset, Settings};
 use iced::widget::{
-    Column, button, checkbox, column, container, pick_list, progress_bar, row, scrollable, space,
-    text, tooltip,
+    Column, button, checkbox, column, container, image, pick_list, progress_bar, row, scrollable,
+    space, text, tooltip,
 };
 use iced::{Alignment, Element, Length, Subscription, Task, Theme, event, window};
 use std::collections::HashMap;
@@ -14,6 +14,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use wasmffmpeg_core::{ImageFormat, MediaKind, OutputFormat, VideoFormat};
 
 pub type JobId = u64;
+
+/// Window/taskbar icon, embedded so the release binary is self-contained.
+const WINDOW_ICON_PNG: &[u8] = include_bytes!("../assets/icons/icon_256.png");
+/// Small icon shown next to the title in the header.
+const TITLE_ICON_PNG: &[u8] = include_bytes!("../assets/icons/icon_64.png");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
@@ -80,6 +85,11 @@ pub fn run() -> iced::Result {
         .subscription(subscription)
         .theme(Theme::Dark)
         .title("wasmffmpeg — media converter")
+        .window(window::Settings {
+            // A missing/corrupt icon must never stop the app from starting.
+            icon: window::icon::from_file_data(WINDOW_ICON_PNG, None).ok(),
+            ..Default::default()
+        })
         .window_size([1100.0, 720.0])
         .centered()
         .run()
@@ -413,6 +423,9 @@ fn view(app: &App) -> Element<'_, Msg> {
     }
 
     let header = row![
+        image(image::Handle::from_bytes(TITLE_ICON_PNG))
+            .width(32)
+            .height(32),
         text("wasmffmpeg").size(24),
         space().width(Length::Fill),
         button("Add files").on_press(Msg::AddFiles),
